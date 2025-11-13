@@ -114,6 +114,10 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// 根目錄路由 (處理所有找不到其他路由的請求)
+app.get('/', (req, res) => {
+    res.send('<h1>歡迎來到 AI 應用程式後端</h1><p>請通過前端網頁存取服務。</p>');
+});
 
 // =========================================================
 // ❗ ❗ ❗ 6. 安全區塊：延後實例化 ❗ ❗ ❗
@@ -139,9 +143,29 @@ async (accessToken, refreshToken, profile, done) => {
 // =========================================================
 
 // 登入/登出路由 (這裡不變)
-// ... (所有 app.get/app.post 路由都放在這裡) ...
+// 1. 啟動 Google 登入流程 (你點擊按鈕後導向這裡)
+app.get('/auth/google', 
+    passport.authenticate('google', { 
+        scope: ['profile', 'email'] 
+    })
+);
 
-// 這裡我們只放兩個關鍵路由，你需要確保你所有其他的路由也都複製過來
+// 2. Google 驗證成功後的回調路徑
+app.get('/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/' }), 
+    (req, res) => {
+        // 驗證成功，導回前端應用程式
+        res.redirect(FRONTEND_BASE_URL); 
+    }
+);
+
+// 3. 登出路由
+app.get('/auth/logout', (req, res, next) => {
+    req.logout((err) => {
+        if (err) { return next(err); }
+        res.redirect(FRONTEND_BASE_URL); 
+    });
+});
 
 // 登入成功後的頁面 (使用 ensureAuthenticated 來保護)
 const ensureAuthenticated = (req, res, next) => {

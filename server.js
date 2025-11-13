@@ -142,7 +142,24 @@ async (accessToken, refreshToken, profile, done) => {
 // 7. API 路由 (確保所有路由都在實例化之後)
 // =========================================================
 
-// 登入/登出路由 (這裡不變)
+// ---------------------------------------------
+// A. 路由保護函數定義 (必須在所有 app.get/app.post 之前)
+// ---------------------------------------------
+
+const ensureAuthenticated = (req, res, next) => {
+    // 如果用戶已登入，繼續執行路由
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    // 如果未登入，導向根目錄（Express 會導向首頁 HTML）
+    res.redirect('/');
+};
+
+
+// ---------------------------------------------
+// B. 登入/登出核心路由 (不需要 ensureAuthenticated)
+// ---------------------------------------------
+
 // 1. 啟動 Google 登入流程 (你點擊按鈕後導向這裡)
 app.get('/auth/google', 
     passport.authenticate('google', { 
@@ -163,33 +180,37 @@ app.get('/auth/google/callback',
 app.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
+        // 登出成功，導回前端
         res.redirect(FRONTEND_BASE_URL); 
     });
 });
 
-// 登入成功後的頁面 (使用 ensureAuthenticated 來保護)
-const ensureAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    res.redirect('/');
-};
 
+// ---------------------------------------------
+// C. 受保護的應用程式路由 (需要 ensureAuthenticated)
+// ---------------------------------------------
+
+// 4. 登入成功後的頁面 (前端檢查 Session 使用)
 app.get('/success', ensureAuthenticated, (req, res) => {
-    res.send(`
-        <h1>登入成功！</h1>
-        <p>歡迎, ${req.user.displayName} (您的ID: ${req.user.id})</p>
-        <a href="${FRONTEND_BASE_URL}/auth/logout">登出</a>
-    `);
+    // ❗ 修正：回傳 JSON，以避免 Render 上的 HTML 格式錯誤
+    res.json({
+        isLoggedIn: true,
+        displayName: req.user.displayName,
+        id: req.user.id
+    });
 });
 
-// 聊天 API 路由 (使用 openai 實例)
+// 5. 聊天 API 路由 
 app.post('/api/chat', ensureAuthenticated, async (req, res) => {
-    // 聊天邏輯需要用到 openai 變數，它已經在上方安全實例化了
-    // 這裡的邏輯與之前你確認的帶有記憶體的邏輯相同
-    // ... (確保這段邏輯是完整的，並能使用 openai 變數) ...
+    // ❗ 這裡的邏輯需要您補齊，但結構是正確的
+    // ... (讀取歷史紀錄、調用 openai、儲存紀錄的邏輯) ...
+    res.status(501).json({ error: "聊天邏輯尚未實作或載入" }); 
 });
 
+// 6. 根目錄路由 (如果找不到其他路由，會導向這裡)
+app.get('/', (req, res) => {
+    res.send('<h1>歡迎來到 AI 應用程式後端</h1><p>請通過前端網頁存取服務。</p>');
+});
 
 // =========================================================
 // 8. 啟動伺服器

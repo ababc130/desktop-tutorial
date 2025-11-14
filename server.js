@@ -15,6 +15,11 @@ import passport from 'passport';
 import session from 'express-session';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 
+// =========================================================
+// 🚀 啟動檢查用 Log（用來確認 Render 執行的是這個檔案）
+// =========================================================
+console.log("🚀 server.js is running and handling requests!");
+
 // 載入資料模型
 import ChatLog from './models/ChatLog.js';     
 import Character from './models/Character.js'; 
@@ -86,14 +91,7 @@ app.set('trust proxy', 1);
 
 // ✅ 1. CORS（放寬判斷 + 確保 Google 可通過）
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed.trim()))) {
-      callback(null, true);
-    } else {
-      console.warn(`🚫 CORS blocked: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true,
   credentials: true,
 }));
 

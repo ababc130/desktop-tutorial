@@ -24,7 +24,6 @@ const authStatus = document.getElementById('auth-status');
 const chatWindow = document.getElementById('chat-window');
 const chatInputForm = document.getElementById('chat-input-form');
 const messageInput = document.getElementById('message-input');
-const characterIdDisplay = document.getElementById('character-id-display');
 
 // 函數：從後端獲取角色名稱並更新介面
 async function loadCharacterDetails() {

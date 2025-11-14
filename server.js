@@ -325,6 +325,33 @@ app.post('/api/character/create', ensureAuthenticated, async (req, res) => {
     }
 });
 
+// 10. 獲取單個角色資料 API (任何已登入用戶可存取)
+app.get('/api/character/:id', ensureAuthenticated, async (req, res) => {
+    try {
+        // 從 URL 參數中獲取角色 ID
+        const characterId = req.params.id; 
+
+        // 查詢資料庫
+        const character = await Character.findById(characterId);
+        
+        if (!character) {
+            return res.status(404).json({ error: '找不到指定的角色 ID' });
+        }
+        
+        // 返回角色的公開資訊 (名稱、描述、ID)
+        res.json({
+            id: character._id,
+            name: character.name,
+            description: character.description,
+            systemPrompt: character.systemPrompt // 為了聊天，我們需要這個
+        });
+
+    } catch (error) {
+        console.error('❌ 獲取角色詳情失敗:', error);
+        res.status(500).json({ error: '後端服務錯誤。' });
+    }
+});
+
 // 5. 聊天 API 路由 
 app.post('/api/chat', ensureAuthenticated, async (req, res) => {
     // 1. 獲取真實的用戶 ID

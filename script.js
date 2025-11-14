@@ -30,38 +30,38 @@ function displayMessage(role, content) {
 
 // 輔助函數：檢查登入狀態
 async function checkAuthStatus() {
-    try {
-        const response = await fetch(`${BACKEND_URL}/success`, {
-            credentials: 'include'
-        }); 
-        
-        if (response.ok) {
+    try {
+        const response = await fetch(`${BACKEND_URL}/success`, {
+            credentials: 'include'
+        }); 
+        
+        if (response.ok) {
             // ❗ 關鍵修正：將響應解析為 JSON 
-            const userData = await response.json(); 
-            
-            // 從 JSON 中讀取 displayName
-            const userName = userData.displayName || '用戶';
-            
-            authStatus.innerHTML = `
-                ✅ 已登入為 <strong>${userName}</strong>。<br>
-                <a href="${BACKEND_URL}/auth/logout">登出</a>
-            `;
-            chatInputForm.style.display = 'flex'; // 顯示聊天輸入框
-        } else {
+            const userData = await response.json(); 
+            
+            // 從 JSON 中讀取 displayName
+            const userName = userData.displayName || '用戶';
+            
+            authStatus.innerHTML = `
+                ✅ 已登入為 <strong>${userName}</strong>。<br>
+                <a href="${BACKEND_URL}/auth/logout">登出</a>
+            `;
+            chatInputForm.style.display = 'flex'; // 顯示聊天輸入框
+        } else {
             // 未登入，導向登入連結
-            authStatus.innerHTML = `
-                ❌ 尚未登入。<br>
-                <a href="${BACKEND_URL}/auth/google">使用 Google 帳號登入</a>
-            `;
-            chatInputForm.style.display = 'none'; // 隱藏聊天輸入框
-            displayMessage('ai', '請先登入才能開始聊天。');
-        }
-    } catch (error) {
+            authStatus.innerHTML = `
+                ❌ 尚未登入。<br>
+                <a href="${BACKEND_URL}/auth/google">使用 Google 帳號登入</a>
+            `;
+            chatInputForm.style.display = 'none'; // 隱藏聊天輸入框
+            displayMessage('ai', '請先登入才能開始聊天。');
+        }
+    } catch (error) {
         // 如果連線失敗，可能是後端還沒啟動
-        authStatus.innerHTML = '⚠️ 後端伺服器連線錯誤！請確認 server.js 正在運行。';
-        console.error('檢查登入狀態失敗:', error);
-        chatInputForm.style.display = 'none';
-    }
+        authStatus.innerHTML = '⚠️ 後端伺服器連線錯誤！請確認 server.js 正在運行。';
+        console.error('檢查登入狀態失敗:', error);
+        chatInputForm.style.display = 'none';
+    }
 }
 
 // 核心函數：發送訊息到後端

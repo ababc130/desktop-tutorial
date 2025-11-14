@@ -250,6 +250,10 @@ app.get('/', (req, res) => {
 // 8. 啟動伺服器
 // =========================================================
 
-app.listen(PORT, () => {
-    console.log(`✅ 後端伺服器已啟動並在 http://localhost:${PORT} 運行`);
+// ❗ 關鍵修正：使用 Render 環境提供的 PORT 變數，如果沒有則使用 3000 (用於本地測試)
+const HOST_PORT = process.env.PORT || PORT; 
+
+app.listen(HOST_PORT, () => {
+    // 讓 Log 顯示正確的 Port，方便除錯
+    console.log(`✅ 後端伺服器已啟動並在 Port ${HOST_PORT} 運行`);
 });

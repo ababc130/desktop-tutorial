@@ -133,7 +133,7 @@ openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: GOOGLE_CALLBACK_URL, // 部署時使用 Render URL
+    callbackURL: 'https://ai-chat-backend-service.onrender.com/auth/google/callback', // 部署時使用 Render URL
 },
 async (accessToken, refreshToken, profile, done) => {
     return done(null, profile);
@@ -174,7 +174,7 @@ app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }), 
     (req, res) => {
         // 驗證成功，導回前端應用程式
-        res.redirect(FRONTEND_BASE_URL); 
+        res.redirect('https://ababc130.github.io/desktop-tutorial/'); 
     }
 );
 

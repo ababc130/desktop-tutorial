@@ -183,7 +183,7 @@ app.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
         // 登出成功，導回前端
-        res.redirect(FRONTEND_BASE_URL); 
+        res.redirect('https://ababc130.github.io/desktop-tutorial/'); 
     });
 });
 

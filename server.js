@@ -46,7 +46,7 @@ const ALLOWED_ORIGINS_STRING = process.env.ALLOWED_ORIGINS_STRING;
 const ALLOWED_ORIGINS = ALLOWED_ORIGINS_STRING ? ALLOWED_ORIGINS_STRING.split(',') : [];
 
 // 測試用 ID (確保在本地和部署時，所有 ID 都已經被替換為變數或真實值)
-const TARGET_CHARACTER_ID = "6914b57be382ade03c24cfda"; 
+const TARGET_CHARACTER_ID = "6914ddea9d8fafba3f01368d"; 
 
 // 宣告變數 (不賦值)，以便在所有配置完成後，安全地實例化
 let openai;

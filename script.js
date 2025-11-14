@@ -5,7 +5,7 @@ const CHAT_ENDPOINT = '/api/chat';
 
 // ❗ 必須手動替換成你後端使用的真實角色 ID
 // (請在 server.js 檔案中找到你設定的 TARGET_CHARACTER_ID)
-const CHARACTER_ID = '6914b57be382ade03c24cfda'; 
+const CHARACTER_ID = '6914ddea9d8fafba3f01368d'; 
 
 
 // 獲取 DOM 元素

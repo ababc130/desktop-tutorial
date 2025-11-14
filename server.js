@@ -248,13 +248,15 @@ app.post('/api/chat', ensureAuthenticated, async (req, res) => {
     }
 
     try {
+        // ❗ ❗ ❗ 診斷日誌：確認用戶 ID 和目標 ID ❗ ❗ ❗
+        console.log(`[Chat Debug] User ID: ${userId}, Character ID: ${targetCharacterId}`);
+
         // 3. 獲取角色設定 (System Prompt)
         const character = await Character.findById(targetCharacterId);
         if (!character) {
             return res.status(404).json({ error: '找不到指定的角色。' });
         }
         const systemPrompt = character.systemPrompt;
-
 
         // 4. 讀取最近的歷史對話 (短期記憶)
         const historyLogs = await ChatLog.find({ 
@@ -263,6 +265,9 @@ app.post('/api/chat', ensureAuthenticated, async (req, res) => {
         })
         .sort({ createdAt: -1 }) 
         .limit(10); 
+
+        // ❗ ❗ 診斷日誌 2：確認是否成功載入歷史紀錄 ❗ ❗
+        console.log(`[Chat Debug] Retrieved history logs count: ${historyLogs.length}`);
 
         // 轉換歷史紀錄 (從舊到新排列)
         const historyMessages = historyLogs.reverse().map(log => ({

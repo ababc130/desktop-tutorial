@@ -1,6 +1,6 @@
 // admin.js
 
-const BACKEND_URL = 'http://localhost:3000'; // ❗ 本地測試請使用 Port 3000
+const BACKEND_URL = 'https://ai-chat-backend-service.onrender.com'; 
 const API_URL = `${BACKEND_URL}/api/admin/characters`;
 const tableContainer = document.getElementById('character-table-container');
 

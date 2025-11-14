@@ -14,6 +14,7 @@ import mongoose from 'mongoose';
 import passport from 'passport';
 import session from 'express-session';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import MongoStore from 'connect-mongo'; // ✅ 放在這裡
 
 // =========================================================
 // 🚀 啟動檢查用 Log（用來確認 Render 執行的是這個檔案）
@@ -103,9 +104,13 @@ app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: MONGODB_URI,
+    ttl: 24 * 60 * 60 // 1 天有效
+  }),
   cookie: {
     sameSite: 'None',
-    secure: process.env.NODE_ENV === 'production', // Render 為 true，本地 false
+    secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 24,
   }
 }));

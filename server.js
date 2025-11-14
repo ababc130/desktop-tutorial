@@ -85,47 +85,39 @@ passport.deserializeUser((user, done) => {
 
 
 // =========================================================
-// 5. 設定中介軟體 (Middleware) - 修正版
+// 5. 設定中介軟體 (Middleware) - 最終修正版
 // =========================================================
-app.set('trust proxy', 1);
 
-// ✅ 1. CORS（放寬判斷 + 確保 Google 可通過）
+app.set('trust proxy', 1); // 信任代理，處理 HTTPS
+
+// 1. CORS：必須在處理 Session 之前
 app.use(cors({
-  origin: true,
-  credentials: true,
+    origin: true, // 允許所有 origin (你的配置，或者你可以更嚴謹)
+    credentials: true, // 允許 Cookie 跨域傳輸
 }));
 
-// ✅ 2. body-parser 限制型
+// 2. body-parser
 app.use(bodyParser.json({ limit: '1mb', type: 'application/json' }));
 
-// ✅ 3. session
+// 3. session
 app.use(session({
-  secret: SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: MONGODB_URI,
-    ttl: 24 * 60 * 60 // 1 天有效
-  }),
-  cookie: {
-    sameSite: 'None',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24,
-  }
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: MONGODB_URI,
+        ttl: 24 * 60 * 60 // 1 天有效
+    }),
+    cookie: {
+        sameSite: 'None',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24,
+    }
 }));
 
-// ✅ 4. passport
+// 4. passport 初始化 (依賴 Session)
 app.use(passport.initialize());
 app.use(passport.session());
-
-// 4. 啟用 Passport
-app.use(passport.initialize());
-app.use(passport.session());
-
-// 根目錄路由 (處理所有找不到其他路由的請求)
-app.get('/', (req, res) => {
-    res.send('<h1>歡迎來到 AI 應用程式後端</h1><p>請通過前端網頁存取服務。</p>');
-});
 
 // =========================================================
 // ❗ ❗ ❗ 6. 安全區塊：延後實例化 ❗ ❗ ❗
@@ -155,15 +147,23 @@ passport.use(new GoogleStrategy({
 // A. 路由保護函數定義 (必須在所有 app.get/app.post 之前)
 // ---------------------------------------------
 
+// server.js - 修正後的路由保護函數
 const ensureAuthenticated = (req, res, next) => {
     // 如果用戶已登入，繼續執行路由
     if (req.isAuthenticated()) {
         return next();
     }
-    // 如果未登入，導向根目錄（Express 會導向首頁 HTML）
-    res.redirect('/');
+    
+    // ❗ 關鍵修正：對於 API 請求，應該回傳 401 Unauthorized
+    // 而不是導向 HTML 頁面
+    res.status(401).json({ 
+        error: "Unauthorized", 
+        message: "請先登入才能存取此資源。" 
+    });
+    
+    // 如果你絕對需要導向，請確保在前端處理 401 狀態碼
+    // res.redirect('/'); // 刪除或註釋掉這行
 };
-
 
 // ---------------------------------------------
 // B. 登入/登出核心路由 (不需要 ensureAuthenticated)

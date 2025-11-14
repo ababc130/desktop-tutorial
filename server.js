@@ -51,6 +51,7 @@ let openai;
 // 3. 應用程式初始化與資料庫連線
 // =========================================================
 const app = express();
+app.set('trust proxy', 1);
 
 // 資料庫連線
 mongoose.connect(MONGODB_URI)
@@ -131,7 +132,7 @@ openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: 'http://localhost:3000/auth/google/callback', // 部署時使用 Render URL
+    callbackURL: 'https://ai-chat-backend-service.onrender.com/auth/google/callback', // 部署時使用 Render URL
 },
 async (accessToken, refreshToken, profile, done) => {
     return done(null, profile);

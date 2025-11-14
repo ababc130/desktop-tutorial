@@ -118,7 +118,7 @@ app.use(session({
         ttl: 24 * 60 * 60 // 1 天有效
     }),
     cookie: {
-        sameSite: 'Lax',
+        sameSite: 'None',
         secure: process.env.NODE_ENV === 'production',
         maxAge: 1000 * 60 * 60 * 24,
     }

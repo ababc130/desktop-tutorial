@@ -118,6 +118,7 @@ app.use(session({
         ttl: 24 * 60 * 60 // 1 天有效
     }),
     cookie: {
+        path: '/',
         sameSite: 'None',
         secure: process.env.NODE_ENV === 'production',
         maxAge: 1000 * 60 * 60 * 24,
@@ -281,6 +282,46 @@ app.get('/api/admin/characters', ensureAdmin, async (req, res) => {
     } catch (error) {
         console.error('❌ 獲取角色列表失敗:', error);
         res.status(500).json({ error: '無法獲取角色列表。' });
+    }
+});
+
+// 9. 用戶：創建新角色 API
+// ❗ 使用 ensureAuthenticated 確保任何已登入用戶都能存取
+app.post('/api/character/create', ensureAuthenticated, async (req, res) => {
+    try {
+        // 從請求中取得前端傳來的新角色資訊
+        const { name, systemPrompt, description } = req.body;
+        
+        // 確保核心欄位存在
+        if (!name || !systemPrompt) {
+            return res.status(400).json({ error: '角色名稱和性格(System Prompt)為必填欄位。' });
+        }
+        
+        // 創建 Mongoose 文件
+        const newCharacter = await Character.create({
+            name: name,
+            systemPrompt: systemPrompt,
+            description: description, 
+            
+            // 欄位 1: 專屬編號 (使用登入用戶的 Google ID 作為角色作者 ID)
+            creatorId: req.user.id, 
+            // 欄位 2: 作者名稱
+            creatorName: req.user.displayName,
+        });
+
+        console.log(`✅ 新角色已創建: ${newCharacter.name} (作者: ${req.user.displayName})`);
+        res.status(201).json({ 
+            message: '角色創建成功', 
+            characterId: newCharacter._id 
+        });
+
+    } catch (error) {
+        // 處理 Mongoose 的唯一索引錯誤 (通常是角色名稱重複)
+        if (error.code === 11000) { 
+             return res.status(409).json({ error: '角色名稱已存在，請換一個名稱。' });
+        }
+        console.error('❌ 創建角色失敗:', error);
+        res.status(500).json({ error: '後端創建角色時發生錯誤。' });
     }
 });
 

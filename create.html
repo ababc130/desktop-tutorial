@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>創建您的 AI 角色</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        h1 { color: #007bff; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input[type="text"], textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        textarea { resize: vertical; height: 150px; }
+        button { background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; font-size: 16px; }
+        #message { margin-top: 20px; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>🌟 創建 AI 角色</h1>
+    <p>請為您的角色設定名稱、性格和簡短描述。任何登入用戶都能創建。</p>
+
+    <div id="auth-status"></div>
+
+    <form id="create-character-form">
+        <label for="name">角色名稱 (Character Name):</label>
+        <input type="text" id="name" name="name" required placeholder="例如：冷酷程式導師">
+
+        <label for="systemPrompt">核心性格設定 (System Prompt):</label>
+        <textarea id="systemPrompt" name="systemPrompt" required placeholder="請詳細描述角色的個性、說話風格、背景和限制。例如：你是一位古代俠客，語氣傲慢，說話不超過三句。"></textarea>
+
+        <label for="description">簡短描述 (供其他用戶查看):</label>
+        <textarea id="description" name="description" placeholder="例如：這位角色是一位隱居多年的武林高手，不輕易透露身份。"></textarea>
+
+        <button type="submit">創建角色</button>
+        <div id="message"></div>
+    </form>
+
+    <script src="create.js"></script>
+</body>
+</html>

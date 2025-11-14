@@ -236,9 +236,77 @@ app.get('/success', ensureAuthenticated, (req, res) => {
 
 // 5. 聊天 API 路由 
 app.post('/api/chat', ensureAuthenticated, async (req, res) => {
-    // ❗ 這裡的邏輯需要您補齊，但結構是正確的
-    // ... (讀取歷史紀錄、調用 openai、儲存紀錄的邏輯) ...
-    res.status(501).json({ error: "聊天邏輯尚未實作或載入" }); 
+    // 1. 獲取真實的用戶 ID
+    const userId = req.user.id; // 來自 Google 登入的真實唯一 ID
+    
+    // 2. 獲取角色 ID 和用戶訊息 (使用硬編碼 ID，這是目前的方法)
+    const targetCharacterId = TARGET_CHARACTER_ID; // 👈 你的目標角色 ID
+    const { message } = req.body; 
+
+    if (!message || !targetCharacterId) {
+        return res.status(400).json({ error: '缺少訊息內容或角色 ID' });
+    }
+
+    try {
+        // 3. 獲取角色設定 (System Prompt)
+        const character = await Character.findById(targetCharacterId);
+        if (!character) {
+            return res.status(404).json({ error: '找不到指定的角色。' });
+        }
+        const systemPrompt = character.systemPrompt;
+
+
+        // 4. 讀取最近的歷史對話 (短期記憶)
+        const historyLogs = await ChatLog.find({ 
+            userId: userId, 
+            characterId: targetCharacterId 
+        })
+        .sort({ createdAt: -1 }) 
+        .limit(10); 
+
+        // 轉換歷史紀錄 (從舊到新排列)
+        const historyMessages = historyLogs.reverse().map(log => ({
+            role: log.role, // 確保這裡使用 'user' 或 'assistant'
+            content: log.content,
+        }));
+
+        // 5. 組合完整的 Messages 陣列給 AI
+        const messages = [
+            { role: "system", content: systemPrompt }, 
+            ...historyMessages,                        
+            { role: "user", content: message }         
+        ];
+
+        // 6. 呼叫 OpenAI API
+        const completion = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: messages,
+        });
+
+        const aiResponseContent = completion.choices[0].message.content;
+
+        // 7. 儲存新的對話紀錄 (實現記憶體)
+        await ChatLog.create({
+            userId: userId,
+            characterId: targetCharacterId,
+            role: 'user',
+            content: message,
+        });
+        await ChatLog.create({
+            userId: userId,
+            characterId: targetCharacterId,
+            role: 'assistant', // 確保使用 'assistant'
+            content: aiResponseContent,
+        });
+
+        // 8. 將 AI 的回覆送回給網頁
+        res.json({ response: aiResponseContent });
+
+    } catch (error) {
+        // ❗ 如果是 OpenAI 錯誤或資料庫錯誤，會在 Render 日誌中顯示
+        console.error("❌ 聊天處理失敗:", error); 
+        res.status(500).json({ error: '後端聊天服務處理失敗，請檢查日誌。' });
+    }
 });
 
 // 6. 根目錄路由 (如果找不到其他路由，會導向這裡)

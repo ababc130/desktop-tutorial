@@ -80,37 +80,41 @@ passport.deserializeUser((user, done) => {
 
 
 // =========================================================
-// 5. 設定中介軟體 (Middleware) - 順序必須正確
+// 5. 設定中介軟體 (Middleware) - 修正版
 // =========================================================
+app.set('trust proxy', 1);
 
-// 1. CORS - 必須是第一個，並使用彈性邏輯
+// ✅ 1. CORS（放寬判斷 + 確保 Google 可通過）
 app.use(cors({
-    origin: (origin, callback) => {
-        // 允許：沒有來源(Postman) 或 來源包含在白名單陣列中
-        if (!origin || ALLOWED_ORIGINS.some(allowed => allowed.trim() === origin)) {
-            callback(null, true);
-        } else {
-            console.error(`CORS 拒絕連線：${origin}`); 
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-}));
-
-// 2. Body Parser - 處理 JSON
-app.use(bodyParser.json());
-
-// 3. Session 配置 (放在 Passport 初始化之前)
-app.use(session({
-    secret: SESSION_SECRET,
-    resave: false, 
-    saveUninitialized: false, 
-    cookie: {
-        sameSite: 'None', 
-        secure: process.env.NODE_ENV === 'production', // ✅ Render 是 https 才 secure   
-        maxAge: 1000 * 60 * 60 * 24 
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed.trim()))) {
+      callback(null, true);
+    } else {
+      console.warn(`🚫 CORS blocked: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
+  },
+  credentials: true,
 }));
+
+// ✅ 2. body-parser 限制型
+app.use(bodyParser.json({ limit: '1mb', type: 'application/json' }));
+
+// ✅ 3. session
+app.use(session({
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    sameSite: 'None',
+    secure: process.env.NODE_ENV === 'production', // Render 為 true，本地 false
+    maxAge: 1000 * 60 * 60 * 24,
+  }
+}));
+
+// ✅ 4. passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // 4. 啟用 Passport
 app.use(passport.initialize());
@@ -169,14 +173,14 @@ app.get('/auth/google',
     })
 );
 
-// 2. Google 驗證成功後的回調路徑
-app.get('/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/' }), 
-    (req, res) => {
-        // 驗證成功，導回前端應用程式
-        res.redirect('https://ababc130.github.io/desktop-tutorial/'); 
-    }
-);
+// 2. Google 驗證成功後的回調路徑（加上日誌）
+app.get('/auth/google/callback', (req, res, next) => {
+  console.log("🌀 Google callback triggered:", req.query);
+  next();
+}, passport.authenticate('google', { failureRedirect: '/' }), (req, res) => {
+  console.log("✅ Google login success, user:", req.user);
+  res.redirect(FRONTEND_BASE_URL);
+});
 
 // 3. 登出路由
 app.get('/auth/logout', (req, res, next) => {

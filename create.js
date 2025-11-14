@@ -1,6 +1,10 @@
 // create.js
 
-const BACKEND_URL = 'http://localhost:3000'; // ❗ 本地測試請使用 Port 3000
+const RENDER_BACKEND_URL = 'https://ai-chat-backend-service.onrender.com';
+const BACKEND_URL = window.location.hostname.includes('github.io')
+    ? RENDER_BACKEND_URL     // 如果在 GitHub Pages 上運行，連線到 Render
+    : 'http://localhost:3000'; // 如果在本地運行，連線到 Port 3000
+const CHAT_ENDPOINT = '/api/chat';
 const CREATE_ENDPOINT = '/api/character/create';
 
 const form = document.getElementById('create-character-form');

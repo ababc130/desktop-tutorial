@@ -135,9 +135,10 @@ openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: 'https://ai-chat-backend-service.onrender.com/auth/google/callback', // 部署時使用 Render URL
+    callbackURL: 'https://ai-chat-backend-service.onrender.com/auth/google/callback',
 },
-async (accessToken, refreshToken, profile, done) => {
+(accessToken, refreshToken, profile, done) => {
+    console.log("🎯 GoogleStrategy 被觸發", profile?.displayName);
     return done(null, profile);
 }));
 
@@ -165,11 +166,14 @@ const ensureAuthenticated = (req, res, next) => {
 // ---------------------------------------------
 
 // 1. 啟動 Google 登入流程 (你點擊按鈕後導向這裡)
-app.get('/auth/google', 
-    passport.authenticate('google', { 
-        scope: ['profile', 'email'] 
-    })
-);
+app.get('/auth/google', (req, res, next) => {
+  console.log("🚦 /auth/google 被呼叫");
+  next();
+}, passport.authenticate('google', { scope: ['profile', 'email'] }), (req, res) => {
+  console.log("⚠️ passport.authenticate 沒有 redirect (這不應該發生)");
+  res.send("未進入 Google OAuth 流程");
+});
+
 
 // 2. Google 驗證成功後的回調路徑（加上日誌）
 app.get('/auth/google/callback', (req, res, next) => {

@@ -30,6 +30,7 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const MONGODB_URI = process.env.MONGODB_URI;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
 // 部署與 CORS 相關變數
@@ -132,7 +133,7 @@ openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: 'https://ai-chat-backend-service.onrender.com/auth/google/callback', // 部署時使用 Render URL
+    callbackURL: GOOGLE_CALLBACK_URL, // 部署時使用 Render URL
 },
 async (accessToken, refreshToken, profile, done) => {
     return done(null, profile);

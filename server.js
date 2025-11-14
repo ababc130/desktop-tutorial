@@ -36,7 +36,6 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const MONGODB_URI = process.env.MONGODB_URI;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
 // 部署與 CORS 相關變數
@@ -191,10 +190,32 @@ app.get('/auth/google/callback', (req, res, next) => {
 
 // 3. 登出路由
 app.get('/auth/logout', (req, res, next) => {
+    // 步驟 1: 呼叫 req.logout 移除 req.user
     req.logout((err) => {
-        if (err) { return next(err); }
-        // 登出成功，導回前端
-        res.redirect('https://ababc130.github.io/desktop-tutorial/'); 
+        if (err) { 
+            console.error("❌ Passport 登出失敗:", err);
+            return next(err);
+        }
+        
+        // 步驟 2: 銷毀 Session，這會將 Session 從 MongoDB 移除
+        req.session.destroy((err) => {
+            if (err) {
+                console.error("❌ Session 銷毀失敗:", err);
+                return next(err);
+            }
+            
+            // 步驟 3: (可選，但安全起見) 清除瀏覽器端的 Cookie
+            // 通常 req.session.destroy 會自動處理，但針對跨域問題，明確清除更保險
+            res.clearCookie('connect.sid', { 
+                sameSite: 'None', 
+                secure: true, 
+                path: '/' 
+            });
+
+            console.log("✅ 成功登出並銷毀 Session");
+            // 步驟 4: 導回前端
+            res.redirect('https://ababc130.github.io/desktop-tutorial/'); 
+        });
     });
 });
 

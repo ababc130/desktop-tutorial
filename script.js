@@ -30,41 +30,38 @@ function displayMessage(role, content) {
 
 // 輔助函數：檢查登入狀態
 async function checkAuthStatus() {
-    try {
-        // 嘗試訪問一個需要登入的頁面，如果成功，表示已登入
-        const response = await fetch(`${BACKEND_URL}/success`, {
-            // ❗ 這裡新增：告訴瀏覽器在跨網域請求時帶上 Cookie
-            credentials: 'include'
-        }); // <-- 缺少了這個括號
-        const text = await response.text();
-
-        if (response.ok) {
-            // ❗ 修正：使用更寬鬆的正規表達式，忽略空格和換行
-            const match = text.match(/歡迎,\s*(.*?)\s*\(您的ID:/);
-
-
-            // 檢查匹配是否成功且有捕捉到名字           
-            const userName = (match && match[1]) ? match[1].trim() : '用戶';
-            
-            authStatus.innerHTML = `
-                ✅ 已登入為 <strong>${userName}</strong>。<br>
-                <a href="${BACKEND_URL}/auth/logout">登出</a>
-            `;
-            chatInputForm.style.display = 'flex'; // 顯示聊天輸入框
-        } else {
-            // 未登入
-            authStatus.innerHTML = `
-                ❌ 尚未登入。<br>
-                <a href="${BACKEND_URL}/auth/google">使用 Google 帳號登入</a>
-            `;
-            chatInputForm.style.display = 'none'; // 隱藏聊天輸入框
-            displayMessage('ai', '請先登入才能開始聊天。');
-        }
-    } catch (error) {
-        authStatus.innerHTML = '⚠️ 後端伺服器連線錯誤！請確認 server.js 正在運行。';
-        console.error('檢查登入狀態失敗:', error);
-        chatInputForm.style.display = 'none';
-    }
+    try {
+        const response = await fetch(`${BACKEND_URL}/success`, {
+            credentials: 'include'
+        }); 
+        
+        if (response.ok) {
+            // ❗ 關鍵修正：將響應解析為 JSON 
+            const userData = await response.json(); 
+            
+            // 從 JSON 中讀取 displayName
+            const userName = userData.displayName || '用戶';
+            
+            authStatus.innerHTML = `
+                ✅ 已登入為 <strong>${userName}</strong>。<br>
+                <a href="${BACKEND_URL}/auth/logout">登出</a>
+            `;
+            chatInputForm.style.display = 'flex'; // 顯示聊天輸入框
+        } else {
+            // 未登入，導向登入連結
+            authStatus.innerHTML = `
+                ❌ 尚未登入。<br>
+                <a href="${BACKEND_URL}/auth/google">使用 Google 帳號登入</a>
+            `;
+            chatInputForm.style.display = 'none'; // 隱藏聊天輸入框
+            displayMessage('ai', '請先登入才能開始聊天。');
+        }
+    } catch (error) {
+        // 如果連線失敗，可能是後端還沒啟動
+        authStatus.innerHTML = '⚠️ 後端伺服器連線錯誤！請確認 server.js 正在運行。';
+        console.error('檢查登入狀態失敗:', error);
+        chatInputForm.style.display = 'none';
+    }
 }
 
 // 核心函數：發送訊息到後端

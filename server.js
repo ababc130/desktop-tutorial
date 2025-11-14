@@ -107,7 +107,7 @@ app.use(session({
     saveUninitialized: false, 
     cookie: {
         sameSite: 'None', 
-        secure: true,   
+        secure: process.env.NODE_ENV === 'production', // ✅ Render 是 https 才 secure   
         maxAge: 1000 * 60 * 60 * 24 
     }
 }));

@@ -15,6 +15,8 @@ import passport from 'passport';
 import session from 'express-session';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import MongoStore from 'connect-mongo'; // ✅ 放在這裡
+import path from 'path'; 
+import { fileURLToPath } from 'url';
 
 // =========================================================
 // 🚀 啟動檢查用 Log（用來確認 Render 執行的是這個檔案）
@@ -37,6 +39,13 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET;
+
+// 管理員
+const ADMIN_GOOGLE_ID = process.env.ADMIN_GOOGLE_ID;
+
+// 由於使用 ESM，需要手動定義 __filename 和 __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // 部署與 CORS 相關變數
 const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL; 
@@ -109,7 +118,7 @@ app.use(session({
         ttl: 24 * 60 * 60 // 1 天有效
     }),
     cookie: {
-        sameSite: 'None',
+        sameSite: 'Lax',
         secure: process.env.NODE_ENV === 'production',
         maxAge: 1000 * 60 * 60 * 24,
     }
@@ -118,6 +127,9 @@ app.use(session({
 // 4. passport 初始化 (依賴 Session)
 app.use(passport.initialize());
 app.use(passport.session());
+
+// ❗ 靜態檔案服務：讓 Express 伺服器知道去根目錄找檔案
+app.use(express.static(__dirname));
 
 // =========================================================
 // ❗ ❗ ❗ 6. 安全區塊：延後實例化 ❗ ❗ ❗
@@ -145,7 +157,7 @@ passport.use(new GoogleStrategy({
 
 // ---------------------------------------------
 // A. 路由保護函數定義 (必須在所有 app.get/app.post 之前)
-// ---------------------------------------------
+// ---------------------------------------------    
 
 // server.js - 修正後的路由保護函數
 const ensureAuthenticated = (req, res, next) => {
@@ -163,6 +175,25 @@ const ensureAuthenticated = (req, res, next) => {
     
     // 如果你絕對需要導向，請確保在前端處理 401 狀態碼
     // res.redirect('/'); // 刪除或註釋掉這行
+};
+
+// server.js - 管理員保護函數
+const ensureAdmin = (req, res, next) => {
+    // 1. 先確認是否已登入 (req.isAuthenticated())
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Unauthorized", message: "請先登入才能存取此管理資源。" });
+    }
+
+    // 2. 檢查 Google ID 是否為管理員 ID
+    // ❗ 這裡的 ADMIN_GOOGLE_ID 必須和你的 Google ID 匹配
+    if (req.user.id !== ADMIN_GOOGLE_ID) {
+        // 如果 ID 不匹配，則拒絕存取
+        console.warn(`❌ 拒絕非管理員存取: ${req.user.displayName} (ID: ${req.user.id})`);
+        return res.status(403).json({ error: "Forbidden", message: "您沒有存取此管理功能的權限。" });
+    }
+
+    // ID 匹配，允許存取
+    return next();
 };
 
 // ---------------------------------------------
@@ -232,6 +263,25 @@ app.get('/success', ensureAuthenticated, (req, res) => {
         displayName: req.user.displayName,
         id: req.user.id
     });
+});
+
+// 7. 管理員：獲取所有角色列表 API (用於後台表格資料來源)
+app.get('/api/admin/characters', ensureAdmin, async (req, res) => {
+    try {
+        // 讀取 Character model 中的所有數據
+        const characters = await Character.find({}); 
+        
+        // 額外資訊：我們將用戶的 Google ID 轉換為字串，因為 req.user.id 是字串
+        const userId = req.user.id; 
+        
+        // 這裡可以加入邏輯：如果不是超級管理員，則只顯示該用戶自己的角色
+        // 但目前我們使用 ensureAdmin，所以直接返回所有角色
+        
+        res.json(characters);
+    } catch (error) {
+        console.error('❌ 獲取角色列表失敗:', error);
+        res.status(500).json({ error: '無法獲取角色列表。' });
+    }
 });
 
 // 5. 聊天 API 路由 

@@ -54,8 +54,6 @@ const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL;
 const ALLOWED_ORIGINS_STRING = process.env.ALLOWED_ORIGINS_STRING;
 const ALLOWED_ORIGINS = ALLOWED_ORIGINS_STRING ? ALLOWED_ORIGINS_STRING.split(',') : [];
 
-// 測試用 ID (確保在本地和部署時，所有 ID 都已經被替換為變數或真實值)
-const TARGET_CHARACTER_ID = "6914ddea9d8fafba3f01368d"; 
 
 // 宣告變數 (不賦值)，以便在所有配置完成後，安全地實例化
 let openai;
@@ -384,12 +382,14 @@ app.post('/api/chat', ensureAuthenticated, async (req, res) => {
     const userId = req.user.id; // 來自 Google 登入的真實唯一 ID
     
     // 2. 獲取角色 ID 和用戶訊息 (使用硬編碼 ID，這是目前的方法)
-    const targetCharacterId = TARGET_CHARACTER_ID; // 👈 你的目標角色 ID
-    const { message } = req.body; 
+    const { message, characterId } = req.body; // 👈 這裡從 req.body 讀取 characterId
 
-    if (!message || !targetCharacterId) {
+    if (!message || !characterId) {
+        // 檢查 characterId 是否存在
         return res.status(400).json({ error: '缺少訊息內容或角色 ID' });
     }
+
+    const targetCharacterId = characterId;
 
     try {
         // ❗ ❗ ❗ 診斷日誌：確認用戶 ID 和目標 ID ❗ ❗ ❗

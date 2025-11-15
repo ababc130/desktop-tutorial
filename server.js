@@ -359,20 +359,21 @@ app.get('/api/chat/history/:characterId', ensureAuthenticated, async (req, res) 
         const userId = req.user.id;
         const characterId = req.params.characterId;
 
-        // 查詢符合 (用戶ID, 角色ID) 的聊天記錄
-        const chatSession = await Chat.findOne({ userId, characterId });
+        // ❗ 核心修正：使用 ChatLog.find() 查詢所有匹配的紀錄，並按時間排序
+        const historyLogs = await ChatLog.find({ userId, characterId })
+            .sort({ createdAt: 1 }); // 1 = 升序，確保最舊的訊息在最前面
 
-        if (!chatSession) {
-            // 如果沒有找到記錄，返回空陣列
-            return res.json([]);
+        if (!historyLogs || historyLogs.length === 0) {
+            // 如果沒有找到任何記錄，返回空陣列
+            return res.json([]); 
         }
 
-        // 假設你的歷史訊息儲存在 chatMessages 欄位中
-        // 這裡返回的是 AI 模型儲存的原始訊息陣列
-        res.json(chatSession.chatMessages || []);
+        // 返回所有歷史紀錄 (這會被前端的 loadChatHistory() 接收)
+        res.json(historyLogs);
 
     } catch (error) {
-        console.error('❌ 獲取聊天歷史紀錄失敗:', error);
+        // 確保錯誤被捕捉，並打印到 Render 日誌
+        console.error('❌ 獲取聊天歷史紀錄失敗:', error); 
         res.status(500).json({ error: '後端服務錯誤：無法讀取歷史訊息。' });
     }
 });

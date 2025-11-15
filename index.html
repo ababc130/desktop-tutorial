@@ -3,37 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的 AI 角色工廠 - 聊天 MVP</title>
+    <title>用戶首頁 | AI 角色工廠</title>
     <style>
-        /* 簡單的 CSS 樣式讓介面看起來舒服 */
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
         #auth-status { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9; }
-        #chat-window { height: 400px; border: 1px solid #ddd; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background-color: #fff; }
-        .message { margin-bottom: 10px; padding: 8px; border-radius: 5px; }
-        .user { text-align: right; background-color: #d1e7ff; }
-        .ai { text-align: left; background-color: #e9ecef; }
-        #chat-input-form { display: flex; }
-        #message-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px 0 0 5px; }
-        #send-button { padding: 10px 15px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 0 5px 5px 0; }
+        .dashboard-link { margin-top: 15px; display: block; font-size: 1.1em; color: #007bff; }
     </style>
 </head>
 <body>
-    <h1>AI 聊天應用程式</h1>
-    
+    <h1>👋 歡迎回來！</h1>
     <div id="auth-status">
         載入中...
     </div>
 
-    <h2>與角色聊天 (ID: <span id="character-id-display">請替換</span>)</h2>
+    <h2>主要功能：</h2>
+    <a href="/create.html" class="dashboard-link">🎨 創建新角色</a>
+    <a href="/admin.html" class="dashboard-link">🔑 管理員後台</a>
 
-    <div id="chat-window">
-        </div>
-
-    <form id="chat-input-form">
-        <input type="text" id="message-input" placeholder="輸入你的訊息..." required>
-        <button type="submit" id="send-button">發送</button>
-    </form>
-
-    <script src="script.js"></script>
+    <script src="home.js"></script>
 </body>
 </html>

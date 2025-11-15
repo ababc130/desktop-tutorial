@@ -1,22 +1,23 @@
-// script.js
+// script.js - 最終版本：結構修正、動態 URL、載入歷史紀錄
+
+// ===================================================
+// 1. 變數和常量定義
+// ===================================================
 
 const RENDER_BACKEND_URL = 'https://ai-chat-backend-service.onrender.com';
+const CHAT_ENDPOINT = '/api/chat';
+
+// 核心邏輯：動態判斷目前網頁運行的環境
 const BACKEND_URL = window.location.hostname.includes('github.io')
     ? RENDER_BACKEND_URL     // 如果在 GitHub Pages 上運行，連線到 Render
     : 'http://localhost:3000'; // 如果在本地運行，連線到 Port 3000
-const CHAT_ENDPOINT = '/api/chat';
 
-// 核心邏輯：從 URL 的查詢字串中獲取 characterId
+// 獲取角色 ID
 function getCharacterIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('id'); // 尋找網址中 ?id= 的值
+    return params.get('id');
 }
-
-// (請在 server.js 檔案中找到你設定的 TARGET_CHARACTER_ID)
 const CHARACTER_ID = getCharacterIdFromUrl() || '69176fedb94e17cb9b508965';
-
-// 假設這是顯示 ID/名稱的元素
-const characterIdDisplay = document.getElementById('character-id-display'); 
 
 
 // 獲取 DOM 元素
@@ -24,15 +25,16 @@ const authStatus = document.getElementById('auth-status');
 const chatWindow = document.getElementById('chat-window');
 const chatInputForm = document.getElementById('chat-input-form');
 const messageInput = document.getElementById('message-input');
+const characterIdDisplay = document.getElementById('character-id-display'); // 顯示角色名稱/ID
+
 
 // ===================================================
-// ❗ ❗ 這裡新增：歷史紀錄和渲染函數 ❗ ❗
+// 2. 輔助函數 (Helpers)
 // ===================================================
 
 // 輔助函數：渲染訊息到聊天視窗
 function appendMessage(sender, text) {
     const messageElement = document.createElement('div');
-    // 注意：你可能需要調整 class 名稱
     messageElement.classList.add('message', sender === 'user' ? 'user' : 'ai'); 
     
     // 渲染內容
@@ -42,40 +44,17 @@ function appendMessage(sender, text) {
     chatWindow.scrollTop = chatWindow.scrollHeight; 
 }
 
-
-// 函數：載入歷史訊息 (你新增的複雜邏輯放在這裡)
-async function loadChatHistory() {
-if (!CHARACTER_ID) return; // 如果沒有角色 ID 則不執行
-
-try {
-    const url = `${BACKEND_URL}/api/chat/history/${CHARACTER_ID}`;
-    
-    const response = await fetch(url, { credentials: 'include' });
-    
-    if (!response.ok) {
-        throw new Error(`獲取歷史紀錄失敗: ${response.status}`);
-    }
-
-    const history = await response.json();
-    
-    if (history.length > 0) {
-        chatWindow.innerHTML = ''; // 清空視窗
-        
-        // 逐一渲染歷史訊息
-        history.forEach(msg => {
-            // 排除 System 訊息
-            if (msg.role !== 'system') {
-                appendMessage(msg.role, msg.content); // 呼叫渲染函數
-            }
-        });
-    }
-
-} catch (error) {
-    console.error('❌ 載入歷史紀錄失敗:', error);
-    appendMessage('system', '⚠️ 無法載入過去的聊天紀錄。');
+// 輔助函數：顯示訊息到聊天視窗 (用於系統訊息，例如錯誤)
+function displayMessage(role, content) {
+    appendMessage(role, content);
 }
 
-// 函數：從後端獲取角色名稱並更新介面
+
+// ===================================================
+// 3. 核心功能函數 (Core Functions)
+// ===================================================
+
+// 函數 A：載入角色詳情 (從後端獲取名稱)
 async function loadCharacterDetails() {
     if (!CHARACTER_ID || CHARACTER_ID.includes('請手動替換')) {
         characterIdDisplay.textContent = '❌ 請在網址中提供角色 ID (例如: ?id=xxx)';
@@ -84,22 +63,20 @@ async function loadCharacterDetails() {
 
     try {
         const url = `${BACKEND_URL}/api/character/${CHARACTER_ID}`;
-        
-        // 必須帶上 Session Cookie 才能通過 ensureAuthenticated 檢查
         const response = await fetch(url, { credentials: 'include' });
         
         if (!response.ok) {
-            // 如果是 404，表示 ID 不存在，或 401 表示未登入
+            // 如果是 404/401，則顯示錯誤
             characterIdDisplay.textContent = `❌ 無法載入角色。錯誤碼: ${response.status}。請確認 ID 或是否已登入。`;
             return null;
         }
 
         const characterData = await response.json();
         
-        // ❗ 核心修正：將標題改為顯示角色名稱
+        // 核心修正：將標題改為顯示角色名稱
         characterIdDisplay.innerHTML = `角色：<strong>${characterData.name}</strong>`; 
         
-        // 返回角色的 System Prompt (這是聊天功能所需要的)
+        // 返回 System Prompt (雖然 chat API 會自己找，但這是好的數據傳遞習慣)
         return characterData.systemPrompt;
         
     } catch (error) {
@@ -109,96 +86,98 @@ async function loadCharacterDetails() {
     }
 }
 
-// ❗ 步驟三：在網頁載入時呼叫新函數
-document.addEventListener('DOMContentLoaded', async () => {
-    // 載入角色名稱和基本資訊
-    const systemPrompt = await loadCharacterDetails(); 
 
-    // 如果 loadCharacterDetails 成功，則 systemPrompt 不為空
-    if (systemPrompt) {
-        // 現在可以安全地執行其他初始化，例如：載入歷史紀錄
-        loadChatHistory();
+// 函數 B：載入歷史訊息 (解決你的持久化顯示問題)
+async function loadChatHistory() {
+    if (!CHARACTER_ID) return; 
+
+    try {
+        const url = `${BACKEND_URL}/api/chat/history/${CHARACTER_ID}`;
+        const response = await fetch(url, { credentials: 'include' });
+        
+        if (!response.ok) {
+            // 如果連線失敗，可能是後端 API 沒跑
+            throw new Error(`獲取歷史紀錄失敗: ${response.status}`);
+        }
+
+        const history = await response.json();
+        
+        if (history.length > 0) {
+            chatWindow.innerHTML = ''; // 清空視窗
+            
+            // 逐一渲染歷史訊息
+            history.forEach(msg => {
+                if (msg.role !== 'system') {
+                    appendMessage(msg.role, msg.content);
+                }
+            });
+        }
+
+    } catch (error) {
+        console.error('❌ 載入歷史紀錄失敗:', error);
+        appendMessage('system', '⚠️ 無法載入過去的聊天紀錄。');
     }
-    
-    // ❗ 確保這裡只執行一次 loadCharacterDetails
-    // 你的 chatSubmit 邏輯需要確保能取到這個 ID
-});
-
-// 輔助函數：顯示訊息到聊天視窗
-function displayMessage(role, content) {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message', role);
-    messageDiv.textContent = content;
-    chatWindow.appendChild(messageDiv);
-    // 讓聊天視窗自動捲到底部
-    chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// 輔助函數：檢查登入狀態
+
+// 函數 C：檢查登入狀態
 async function checkAuthStatus() {
     try {
-        const response = await fetch(`${BACKEND_URL}/success`, {
-            credentials: 'include'
-        }); 
+        const response = await fetch(`${BACKEND_URL}/success`, { credentials: 'include' }); 
         
         if (response.ok) {
-            // ❗ 關鍵修正：將響應解析為 JSON 
             const userData = await response.json(); 
-            
-            // 從 JSON 中讀取 displayName
             const userName = userData.displayName || '用戶';
             
             authStatus.innerHTML = `
                 ✅ 已登入為 <strong>${userName}</strong>。<br>
                 <a href="${BACKEND_URL}/auth/logout">登出</a>
             `;
-            chatInputForm.style.display = 'flex'; // 顯示聊天輸入框
+            chatInputForm.style.display = 'flex';
         } else {
-            // 未登入，導向登入連結
             authStatus.innerHTML = `
                 ❌ 尚未登入。<br>
                 <a href="${BACKEND_URL}/auth/google">使用 Google 帳號登入</a>
             `;
-            chatInputForm.style.display = 'none'; // 隱藏聊天輸入框
+            chatInputForm.style.display = 'none';
             displayMessage('ai', '請先登入才能開始聊天。');
         }
     } catch (error) {
-        // 如果連線失敗，可能是後端還沒啟動
         authStatus.innerHTML = '⚠️ 後端伺服器連線錯誤！請確認 server.js 正在運行。';
         console.error('檢查登入狀態失敗:', error);
         chatInputForm.style.display = 'none';
     }
 }
 
-// 核心函數：發送訊息到後端
+
+// 核心函數 D：發送訊息到後端
 async function sendMessage(e) {
-    e.preventDefault(); // 阻止表單預設的重新載入行為
+    e.preventDefault(); 
+    
+    if (!CHARACTER_ID || CHARACTER_ID.includes('請手動替換')) {
+        alert("請先在網址中提供有效的角色 ID (?id=...)");
+        return;
+    }
 
     const message = messageInput.value.trim();
     if (!message) return;
 
     displayMessage('user', message);
-    messageInput.value = ''; // 清空輸入框
+    messageInput.value = '';
     
-    // 暫時顯示 AI 正在思考中
     displayMessage('ai', '...'); 
 
     try {
         const response = await fetch(BACKEND_URL + CHAT_ENDPOINT, {
             method: 'POST',
-            headers: {
-                // 必須發送 Cookie (包含 Session ID) 才能讓後端知道是哪個用戶
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 message: message,
-                characterId: CHARACTER_ID // 傳送角色 ID 
+                characterId: CHARACTER_ID 
             }),
-            // ❗ 這裡新增：告訴瀏覽器在跨網域請求時帶上 Cookie
             credentials: 'include'
         });
 
-        // 移除思考中的訊息
         chatWindow.lastChild.remove(); 
 
         if (response.ok) {
@@ -206,7 +185,7 @@ async function sendMessage(e) {
             displayMessage('ai', data.response);
         } else if (response.status === 401) {
             displayMessage('ai', '您的登入已失效，請重新登入。');
-            checkAuthStatus(); // 重新檢查登入狀態
+            checkAuthStatus();
         } 
         else {
             const errorData = await response.json();
@@ -219,8 +198,25 @@ async function sendMessage(e) {
     }
 }
 
+
+// ===================================================
+// 4. 網頁載入啟動點 (Execution Start)
+// ===================================================
+
 // 事件監聽
 chatInputForm.addEventListener('submit', sendMessage);
 
-// 網頁載入時檢查一次登入狀態
-checkAuthStatus();
+
+// 啟動點：網頁載入時執行
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. 檢查並更新登入狀態
+    await checkAuthStatus(); 
+
+    // 2. 載入角色名稱和基本資訊 (依賴登入狀態)
+    const systemPrompt = await loadCharacterDetails(); 
+
+    // 3. 如果成功載入角色，則載入歷史紀錄 (這會解決你的歷史顯示問題)
+    if (systemPrompt) {
+        await loadChatHistory();
+    }
+});

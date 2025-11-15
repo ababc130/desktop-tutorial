@@ -25,6 +25,31 @@ const chatWindow = document.getElementById('chat-window');
 const chatInputForm = document.getElementById('chat-input-form');
 const messageInput = document.getElementById('message-input');
 
+// ===================================================
+// ❗ ❗ 這裡新增：歷史紀錄和渲染函數 ❗ ❗
+// ===================================================
+
+// 輔助函數：渲染訊息到聊天視窗
+function appendMessage(sender, text) {
+    const messageElement = document.createElement('div');
+    // 注意：你可能需要調整 class 名稱
+    messageElement.classList.add('message', sender === 'user' ? 'user' : 'ai'); 
+    
+    // 渲染內容
+    messageElement.innerHTML = `<strong>${sender === 'user' ? '你' : 'AI 助理'}:</strong> ${text}`;
+    
+    chatWindow.appendChild(messageElement);
+    chatWindow.scrollTop = chatWindow.scrollHeight; 
+}
+
+
+// 函數：載入歷史訊息 (你新增的複雜邏輯放在這裡)
+async function loadChatHistory() {
+    // 你的整個 loadChatHistory 函數貼在這裡
+    // 它會使用上面的 appendMessage 函數
+    // ...
+}
+
 // 函數：從後端獲取角色名稱並更新介面
 async function loadCharacterDetails() {
     if (!CHARACTER_ID || CHARACTER_ID.includes('請手動替換')) {

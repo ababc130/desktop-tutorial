@@ -352,6 +352,31 @@ app.get('/api/character/:id', ensureAuthenticated, async (req, res) => {
     }
 });
 
+// 11. 用戶：獲取特定角色聊天歷史紀錄 API
+// ❗ 任何人登入後，可讀取自己與該角色的歷史紀錄
+app.get('/api/chat/history/:characterId', ensureAuthenticated, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const characterId = req.params.characterId;
+
+        // 查詢符合 (用戶ID, 角色ID) 的聊天記錄
+        const chatSession = await Chat.findOne({ userId, characterId });
+
+        if (!chatSession) {
+            // 如果沒有找到記錄，返回空陣列
+            return res.json([]);
+        }
+
+        // 假設你的歷史訊息儲存在 chatMessages 欄位中
+        // 這裡返回的是 AI 模型儲存的原始訊息陣列
+        res.json(chatSession.chatMessages || []);
+
+    } catch (error) {
+        console.error('❌ 獲取聊天歷史紀錄失敗:', error);
+        res.status(500).json({ error: '後端服務錯誤：無法讀取歷史訊息。' });
+    }
+});
+
 // 5. 聊天 API 路由 
 app.post('/api/chat', ensureAuthenticated, async (req, res) => {
     // 1. 獲取真實的用戶 ID

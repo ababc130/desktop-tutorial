@@ -45,9 +45,34 @@ function appendMessage(sender, text) {
 
 // 函數：載入歷史訊息 (你新增的複雜邏輯放在這裡)
 async function loadChatHistory() {
-    // 你的整個 loadChatHistory 函數貼在這裡
-    // 它會使用上面的 appendMessage 函數
-    // ...
+if (!CHARACTER_ID) return; // 如果沒有角色 ID 則不執行
+
+try {
+    const url = `${BACKEND_URL}/api/chat/history/${CHARACTER_ID}`;
+    
+    const response = await fetch(url, { credentials: 'include' });
+    
+    if (!response.ok) {
+        throw new Error(`獲取歷史紀錄失敗: ${response.status}`);
+    }
+
+    const history = await response.json();
+    
+    if (history.length > 0) {
+        chatWindow.innerHTML = ''; // 清空視窗
+        
+        // 逐一渲染歷史訊息
+        history.forEach(msg => {
+            // 排除 System 訊息
+            if (msg.role !== 'system') {
+                appendMessage(msg.role, msg.content); // 呼叫渲染函數
+            }
+        });
+    }
+
+} catch (error) {
+    console.error('❌ 載入歷史紀錄失敗:', error);
+    appendMessage('system', '⚠️ 無法載入過去的聊天紀錄。');
 }
 
 // 函數：從後端獲取角色名稱並更新介面
@@ -82,29 +107,6 @@ async function loadCharacterDetails() {
         characterIdDisplay.textContent = '❌ 載入角色失敗，請檢查網路連線。';
         return null;
     }
-}
-
-// ❗ 步驟二：更新 chatSubmit 函數的 systemPrompt 獲取方式
-async function chatSubmit(e) {
-    e.preventDefault();
-    
-    // 1. 確保已登入且有角色 ID
-    if (!req.isAuthenticated() || !CHARACTER_ID) {
-        alert("請先登入並確保網址中帶有角色 ID (?id=...)");
-        return;
-    }
-
-    // ... (其他邏輯不變) ...
-
-    // 2. 移除舊的硬編碼獲取 System Prompt 的邏輯
-    // 由於我們在 chatSubmit 函數中並沒有直接使用 systemPrompt，
-    // 我們可以依賴後端在 /api/chat 中再次查詢（更安全，但較慢）
-    // 或是將這個 systemPrompt 儲存在前端變數中 (更複雜)。
-    // 
-    // 由於你的 /api/chat 後端已經會根據 CHARACTER_ID 查詢 systemPrompt，
-    // 我們暫時不對 chatSubmit 進行大改，只確保前端能顯示名稱。
-
-    // ...
 }
 
 // ❗ 步驟三：在網頁載入時呼叫新函數

@@ -6,6 +6,7 @@
 import * as dotenv from 'dotenv'; 
 dotenv.config(); // ❗ 確保在所有 process.env 讀取之前執行
 
+import User from './models/User.js'; // ❗ 新增
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
@@ -140,13 +141,22 @@ openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // 實例化 Passport 策略
 passport.use(new GoogleStrategy({
-    clientID: GOOGLE_CLIENT_ID,
-    clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: 'https://ai-chat-backend-service.onrender.com/auth/google/callback',
+    // ...
 },
-(accessToken, refreshToken, profile, done) => {
-    console.log("🎯 GoogleStrategy 被觸發", profile?.displayName);
-    return done(null, profile);
+async (accessToken, refreshToken, profile, done) => {
+    // ❗ 核心修正：檢查用戶是否存在於資料庫
+    let currentUser = await User.findOne({ googleId: profile.id });
+
+    if (!currentUser) {
+        // 如果不存在，則創建新用戶
+        currentUser = await new User({
+            googleId: profile.id,
+            displayName: profile.displayName,
+        }).save();
+    }
+
+    // 將用戶資訊傳給 Passport 處理
+    return done(null, currentUser); 
 }));
 
 
@@ -326,22 +336,32 @@ app.post('/api/character/create', ensureAuthenticated, async (req, res) => {
 // 10. 獲取單個角色資料 API (任何已登入用戶可存取)
 app.get('/api/character/:id', ensureAuthenticated, async (req, res) => {
     try {
-        // 從 URL 參數中獲取角色 ID
-        const characterId = req.params.id; 
+        const characterId = req.params.id;
+        const userId = req.user.googleId; // ❗ 從 Passport 讀取 Google ID (User Model 使用 googleId)
 
-        // 查詢資料庫
+        // 查詢角色資料
         const character = await Character.findById(characterId);
         
         if (!character) {
             return res.status(404).json({ error: '找不到指定的角色 ID' });
         }
+
+        // 查找用戶紀錄，並檢查收藏狀態
+        const user = await User.findOne({ googleId: userId }); 
         
-        // 返回角色的公開資訊 (名稱、描述、ID)
+        let isFavorite = false;
+        if (user) {
+            // 檢查角色的 ID 是否存在於用戶的 favoriteCharacters 陣列中
+            isFavorite = user.favoriteCharacters.map(id => id.toString()).includes(characterId);
+        }
+        
+        // 返回角色的公開資訊 和 收藏狀態
         res.json({
             id: character._id,
             name: character.name,
             description: character.description,
-            systemPrompt: character.systemPrompt // 為了聊天，我們需要這個
+            systemPrompt: character.systemPrompt,
+            isFavorite: isFavorite // ❗ 新增：告訴前端是否已收藏
         });
 
     } catch (error) {
@@ -373,6 +393,38 @@ app.get('/api/chat/history/:characterId', ensureAuthenticated, async (req, res) 
         // 確保錯誤被捕捉，並打印到 Render 日誌
         console.error('❌ 獲取聊天歷史紀錄失敗:', error); 
         res.status(500).json({ error: '後端服務錯誤：無法讀取歷史訊息。' });
+    }
+});
+
+// 12. 用戶：收藏或取消收藏角色 API
+app.post('/api/user/favorite/:characterId', ensureAuthenticated, async (req, res) => {
+    try {
+        const characterId = req.params.characterId;
+        const userId = req.user.id; // 從 Passport 取得 Google ID
+
+        // 查找用戶紀錄
+        const user = await User.findOne({ googleId: userId });
+
+        if (!user) {
+            return res.status(404).json({ error: '找不到使用者紀錄' });
+        }
+
+        const isFavorite = user.favoriteCharacters.includes(characterId);
+
+        if (isFavorite) {
+            // 取消收藏：從陣列中移除 ID
+            user.favoriteCharacters.pull(characterId);
+            await user.save();
+            return res.json({ message: '已取消收藏', isFavorite: false });
+        } else {
+            // 收藏：將 ID 加入陣列
+            user.favoriteCharacters.push(characterId);
+            await user.save();
+            return res.json({ message: '已成功收藏', isFavorite: true });
+        }
+    } catch (error) {
+        console.error('❌ 收藏操作失敗:', error);
+        res.status(500).json({ error: '收藏服務處理失敗。' });
     }
 });
 

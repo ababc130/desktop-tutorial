@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">載入角色中...</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #profile-header { display: flex; justify-content: space-between; align-items: center; }
+        #profile-actions button { padding: 10px 15px; margin-left: 10px; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        #chat-button { background-color: #007bff; color: white; border: none; }
+        #favorite-button { background-color: #f0f0f0; border: 1px solid #ccc; }
+        .favorited { background-color: #ffcccc !important; color: #d90000 !important; border-color: #d90000 !important; }
+        #description-content { margin-top: 20px; padding: 15px; border: 1px dashed #ccc; background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <div id="auth-status"></div> <div id="profile-container">
+        <div id="profile-header">
+            <h1 id="character-name"></h1>
+            <div id="profile-actions">
+                <button id="favorite-button" data-favorited="false">收藏</button>
+                <button id="chat-button">開始聊天</button>
+            </div>
+        </div>
+
+        <h2>角色描述</h2>
+        <div id="description-content">
+            <p id="character-description">載入中...</p>
+        </div>
+    </div>
+    
+    <script src="profile.js"></script>
+</body>
+</html>

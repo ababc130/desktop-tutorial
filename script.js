@@ -17,7 +17,7 @@ function getCharacterIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('id');
 }
-const CHARACTER_ID = getCharacterIdFromUrl() || '69176fedb94e17cb9b508965';
+const CHARACTER_ID = getCharacterIdFromUrl();
 
 
 // 獲取 DOM 元素

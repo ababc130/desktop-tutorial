@@ -411,7 +411,7 @@ app.post('/api/user/favorite/:characterId', ensureAuthenticated, async (req, res
             return res.status(404).json({ error: '找不到使用者紀錄' });
         }
 
-        const isFavorite = user.favoriteCharacters.includes(characterId);
+        const isFavorite = user.favoriteCharacters.map(id => id.toString()).includes(characterId);
 
         if (isFavorite) {
             // 取消收藏：從陣列中移除 ID

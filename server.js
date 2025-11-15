@@ -141,7 +141,9 @@ openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // 實例化 Passport 策略
 passport.use(new GoogleStrategy({
-    // ...
+    clientID: GOOGLE_CLIENT_ID,
+    clientSecret: GOOGLE_CLIENT_SECRET,
+    callbackURL: 'https://ai-chat-backend-service.onrender.com/auth/google/callback',
 },
 async (accessToken, refreshToken, profile, done) => {
     // ❗ 核心修正：檢查用戶是否存在於資料庫

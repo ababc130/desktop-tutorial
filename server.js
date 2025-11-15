@@ -489,6 +489,7 @@ app.post('/api/chat', ensureAuthenticated, async (req, res) => {
         const aiResponseContent = completion.choices[0].message.content;
 
         // 7. 儲存新的對話紀錄 (實現記憶體)
+        
         await ChatLog.create({
             userId: userId,
             characterId: targetCharacterId,

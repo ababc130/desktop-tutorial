@@ -1,5 +1,7 @@
 // home.js (新的首頁邏輯)
 
+const REPO_PATH = '/desktop-tutorial';
+
 const BACKEND_URL = window.location.hostname.includes('github.io')
     ? 'https://ai-chat-backend-service.onrender.com' 
     : 'http://localhost:3000'; 
@@ -57,7 +59,7 @@ async function loadFavorites() {
         
         favorites.forEach(char => {
             // ❗ 導向 chat.html 頁面，並帶上角色的 ID
-            const chatLink = `/chat.html?id=${char._id}`; 
+            const chatLink = `${REPO_PATH}/chat.html?id=${char._id}`;
             
             html += `
                 <li style="padding: 10px 0; border-bottom: 1px dotted #ddd;">

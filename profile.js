@@ -59,7 +59,7 @@ async function loadProfile() {
         
         // 設定聊天按鈕導向
         chatBtn.onclick = () => {
-            window.location.href = `/desktop-tutorial/chat.html?id=${characterId}`;
+            window.location.href = `${REPO_PATH}/chat.html?id=${characterId}`;
         };
 
     } catch (error) {

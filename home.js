@@ -80,24 +80,35 @@ async function loadFavorites() {
 
 // 修正 checkHomeAuthStatus 函數的結尾，在登入成功後呼叫 loadFavorites
 async function checkHomeAuthStatus() {
+    const authStatusDiv = document.getElementById('auth-status');
+    
     try {
         const response = await fetch(`${BACKEND_URL}/success`, { credentials: 'include' }); 
 
-        // ❗ 新增診斷日誌：查看 /success 實際返回的狀態碼
-        console.log(`[Auth Check] /success Status: ${response.status}`);
-        
         if (response.ok) {
-            // ... (原有的顯示登入狀態邏輯) ...
+            const userData = await response.json(); 
+            const userName = userData.displayName || '用戶';
             
-            console.log("DEBUG: Auth OK, proceeding to load favorites."); // 診斷日誌
+            // ❗ 關鍵：成功時立即更新 DOM
+            authStatusDiv.innerHTML = `
+                ✅ **已登入**為 <strong>${userName}</strong>。<br>
+                您的 Google ID: <code>${userData.id}</code><br>
+                <a href="${BACKEND_URL}/auth/logout">登出</a>
+            `;
+            
+            // 登入成功後才載入收藏列表
             loadFavorites(); 
         } else {
-            console.log("DEBUG: Auth Failed, Status not OK."); // 診斷日誌
-            // ... (原有的顯示未登入狀態邏輯) ...
+            // ❗ 關鍵：失敗時更新 DOM，不再是載入中...
+            authStatusDiv.innerHTML = `
+                ❌ 尚未登入。<br>
+                請點擊 <a href="${BACKEND_URL}/auth/google">Google 登入</a>
+            `;
         }
     } catch (error) {
-        // ... (原有的連線錯誤邏輯) ...
-        console.log("DEBUG: Network Error caught during auth check."); // 診斷日誌
+        // ❗ 關鍵：連線錯誤時更新 DOM
+        authStatusDiv.innerHTML = '⚠️ 後端伺服器連線錯誤！';
+        console.error('檢查登入狀態失敗:', error);
     }
 }
 

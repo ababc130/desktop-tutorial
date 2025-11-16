@@ -78,14 +78,25 @@ async function loadFavorites() {
 
 // 修正 checkHomeAuthStatus 函數的結尾，在登入成功後呼叫 loadFavorites
 async function checkHomeAuthStatus() {
-    // ... (所有檢查邏輯) ...
-    if (response.ok) {
-        // ... (原有的顯示登入狀態邏輯) ...
+    try {
+        const response = await fetch(`${BACKEND_URL}/success`, { credentials: 'include' }); 
+
+        // ❗ 新增診斷日誌：查看 /success 實際返回的狀態碼
+        console.log(`[Auth Check] /success Status: ${response.status}`);
         
-        // ❗ 新增：登入成功後載入收藏
-        loadFavorites(); 
-    } 
-    // ... (else 邏輯不變)
+        if (response.ok) {
+            // ... (原有的顯示登入狀態邏輯) ...
+            
+            console.log("DEBUG: Auth OK, proceeding to load favorites."); // 診斷日誌
+            loadFavorites(); 
+        } else {
+            console.log("DEBUG: Auth Failed, Status not OK."); // 診斷日誌
+            // ... (原有的顯示未登入狀態邏輯) ...
+        }
+    } catch (error) {
+        // ... (原有的連線錯誤邏輯) ...
+        console.log("DEBUG: Network Error caught during auth check."); // 診斷日誌
+    }
 }
 
 // 網頁載入時檢查一次登入狀態

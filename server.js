@@ -83,12 +83,24 @@ passport.serializeUser((user, done) => {
 });
 
 // 配置：從 Session 中讀取用戶資訊
-passport.deserializeUser((user, done) => {
-    const finalUser = {
-        id: user.id, // Google ID
-        displayName: user.displayName || user.name.givenName || user.name, 
-    };
-    done(null, finalUser); 
+passport.deserializeUser(async (id, done) => {
+    try {
+        // 從資料庫中找到完整的 User 紀錄
+        const user = await User.findById(id); 
+        
+        // 成功，將 user 物件掛載到 req.user 上
+        if (user) {
+            // ❗ 確保 req.user 是一個可用的物件，我們將使用它的 googleId 
+            done(null, { 
+                id: user.googleId, // 將 Google ID 設為 req.user.id
+                displayName: user.displayName 
+            });
+        } else {
+            done(null, false);
+        }
+    } catch (err) {
+        done(err, null);
+    }
 });
 
 

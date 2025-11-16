@@ -4,6 +4,7 @@
 // 1. 變數和常量定義
 // ===================================================
 
+let currentCharacterName = 'AI 助理'; // 預設值，以防萬一
 const RENDER_BACKEND_URL = 'https://ai-chat-backend-service.onrender.com';
 const CHAT_ENDPOINT = '/api/chat';
 
@@ -35,10 +36,13 @@ const characterIdDisplay = document.getElementById('character-id-display'); // �
 // 輔助函數：渲染訊息到聊天視窗
 function appendMessage(sender, text) {
     const messageElement = document.createElement('div');
+    // 注意：你可能需要調整 class 名稱
     messageElement.classList.add('message', sender === 'user' ? 'user' : 'ai'); 
     
-    // 渲染內容
-    messageElement.innerHTML = `<strong>${sender === 'user' ? '你' : 'AI 助理'}:</strong> ${text}`;
+    // ❗ 核心修正：根據 sender 顯示名稱
+    const senderName = sender === 'user' ? '你' : currentCharacterName; // 使用全域變數
+    
+    messageElement.innerHTML = `<strong>${senderName}:</strong> ${text}`;
     
     chatWindow.appendChild(messageElement);
     chatWindow.scrollTop = chatWindow.scrollHeight; 
@@ -54,10 +58,11 @@ function displayMessage(role, content) {
 // 3. 核心功能函數 (Core Functions)
 // ===================================================
 
-// 函數 A：載入角色詳情 (從後端獲取名稱)
 async function loadCharacterDetails() {
     if (!CHARACTER_ID || CHARACTER_ID.includes('請手動替換')) {
         characterIdDisplay.textContent = '❌ 請在網址中提供角色 ID (例如: ?id=xxx)';
+        // 失敗時，確保名稱使用預設值
+        currentCharacterName = 'AI 助理'; 
         return null;
     }
 
@@ -68,20 +73,26 @@ async function loadCharacterDetails() {
         if (!response.ok) {
             // 如果是 404/401，則顯示錯誤
             characterIdDisplay.textContent = `❌ 無法載入角色。錯誤碼: ${response.status}。請確認 ID 或是否已登入。`;
+            // 失敗時，確保名稱使用預設值
+            currentCharacterName = 'AI 助理'; 
             return null;
         }
 
         const characterData = await response.json();
         
-        // 核心修正：將標題改為顯示角色名稱
-        characterIdDisplay.innerHTML = `角色：<strong>${characterData.name}</strong>`; 
+        // ❗ 核心修正：儲存載入的角色名稱到全域變數
+        currentCharacterName = characterData.name; 
         
-        // 返回 System Prompt (雖然 chat API 會自己找，但這是好的數據傳遞習慣)
+        // 修正：將標題改為顯示角色名稱
+        characterIdDisplay.innerHTML = `角色：<strong>${currentCharacterName}</strong>`; 
+        
+        // 返回 System Prompt
         return characterData.systemPrompt;
         
     } catch (error) {
         console.error('載入角色詳情失敗:', error);
         characterIdDisplay.textContent = '❌ 載入角色失敗，請檢查網路連線。';
+        currentCharacterName = 'AI 助理'; // 失敗時確保名稱為預設值
         return null;
     }
 }

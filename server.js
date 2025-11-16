@@ -442,6 +442,29 @@ app.post('/api/user/favorite/:characterId', ensureAuthenticated, async (req, res
     }
 });
 
+// 13. 用戶：獲取收藏角色列表
+app.get('/api/user/favorites', ensureAuthenticated, async (req, res) => {
+    try {
+        const userId = req.user.id; // 來自 Google ID
+
+        // 查找用戶紀錄，並使用 populate 載入角色詳情
+        const user = await User.findOne({ googleId: userId })
+            .select('favoriteCharacters') // 只選擇 favorites 欄位
+            .populate('favoriteCharacters', 'name description'); // 載入角色的名稱和描述
+
+        if (!user) {
+            return res.status(404).json({ error: '找不到使用者紀錄。' });
+        }
+        
+        // 返回包含角色名稱和 ID 的列表
+        res.json(user.favoriteCharacters);
+
+    } catch (error) {
+        console.error('❌ 獲取收藏列表失敗:', error);
+        res.status(500).json({ error: '無法從後端獲取收藏列表。' });
+    }
+});
+
 // 5. 聊天 API 路由 
 app.post('/api/chat', ensureAuthenticated, async (req, res) => {
     // 1. 獲取真實的用戶 ID
